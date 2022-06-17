@@ -52,7 +52,7 @@ export function $wrapSelectionInMarkNode(
     }
     const isFirstNode = i === 0;
     const isLastNode = i === nodesLength - 1;
-    let targetNode: LexicalNode | null = null;
+    let targetNode: LexicalNode | undefined;
 
     if ($isTextNode(node)) {
       const textContentSize = node.getTextContentSize();
@@ -72,7 +72,7 @@ export function $wrapSelectionInMarkNode(
     } else if ($isElementNode(node) && node.isInline()) {
       targetNode = node;
     }
-    if (targetNode !== null) {
+    if (targetNode !== undefined) {
       if (targetNode && targetNode.is(currentNodeParent)) {
         continue;
       }

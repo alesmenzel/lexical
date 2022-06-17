@@ -26,7 +26,7 @@ export class GridCellNode extends ElementNode {
   __colSpan: number;
 
   constructor(colSpan: number, key?: NodeKey) {
-    super(key);
+    super('');
     this.__colSpan = colSpan;
   }
 

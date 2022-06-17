@@ -78,9 +78,9 @@ export class ElementNode extends LexicalNode {
   getChildren<T extends LexicalNode>(): Array<T> {
     const self = this.getLatest();
     const children = self.__children;
-    const childrenNodes = [];
+    const childrenNodes: Array<T> = [];
     for (let i = 0; i < children.length; i++) {
-      const childNode = $getNodeByKey(children[i]);
+      const childNode = $getNodeByKey<T>(children[i]);
       if (childNode !== null) {
         childrenNodes.push(childNode);
       }
@@ -349,7 +349,7 @@ export class ElementNode extends LexicalNode {
     }
 
     // Remove defined range of children
-    let nodesToRemoveKeys;
+    let nodesToRemoveKeys: Array<NodeKey>;
 
     // Using faster push when only appending nodes
     if (start === writableSelfChildren.length) {
@@ -373,7 +373,7 @@ export class ElementNode extends LexicalNode {
         const nodesToRemoveKeySet = new Set(nodesToRemoveKeys);
         const nodesToInsertKeySet = new Set(nodesToInsertKeys);
         const isPointRemoved = (point: PointType): boolean => {
-          let node = point.getNode();
+          let node: ElementNode | TextNode | null = point.getNode();
           while (node) {
             const nodeKey = node.__key;
             if (

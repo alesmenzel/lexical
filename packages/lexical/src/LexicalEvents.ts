@@ -141,7 +141,10 @@ const rootElementEvents: RootElementEvents = [
 ];
 
 if (CAN_USE_BEFORE_INPUT) {
-  rootElementEvents.push(['beforeinput', onBeforeInput]);
+  rootElementEvents.push([
+    'beforeinput',
+    (event, editor) => onBeforeInput(event as InputEvent, editor),
+  ]);
 }
 
 let lastKeyDownTimeStamp = 0;
@@ -163,6 +166,7 @@ function shouldSkipSelectionChange(
 ): boolean {
   return (
     domNode !== null &&
+    domNode.nodeValue !== null &&
     domNode.nodeType === DOM_TEXT_TYPE &&
     offset !== 0 &&
     offset !== domNode.nodeValue.length
@@ -285,6 +289,7 @@ function onClick(event: MouseEvent, editor: LexicalEditor): void {
       const anchorNode = anchor.getNode();
 
       if (
+        domSelection &&
         anchor.type === 'element' &&
         anchor.offset === 0 &&
         selection.isCollapsed() &&
@@ -297,7 +302,11 @@ function onClick(event: MouseEvent, editor: LexicalEditor): void {
         domSelection.removeAllRanges();
         selection.dirty = true;
       }
-    } else if ($isNodeSelection(selection) && domSelection.isCollapsed) {
+    } else if (
+      domSelection &&
+      $isNodeSelection(selection) &&
+      domSelection.isCollapsed
+    ) {
       const domAnchor = domSelection.anchorNode;
       // If the user is attempting to click selection back onto text, then
       // we should attempt create a range selection.
@@ -647,7 +656,7 @@ function onInput(event: InputEvent, editor: LexicalEditor): void {
         $setCompositionKey(null);
       }
     } else {
-      $updateSelectedTextFromDOM(editor, false);
+      $updateSelectedTextFromDOM(editor, false, null);
 
       // onInput always fires after onCompositionEnd for FF.
       if (isFirefoxEndingComposition) {
@@ -700,7 +709,7 @@ function onCompositionStart(
 
 function onCompositionEndImpl(
   editor: LexicalEditor,
-  data: string | null | undefined,
+  data: string | null,
 ): void {
   const compositionKey = editor._compositionKey;
   $setCompositionKey(null);
@@ -713,7 +722,11 @@ function onCompositionEndImpl(
       const node = $getNodeByKey(compositionKey);
       const textNode = getDOMTextNode(editor.getElementByKey(compositionKey));
 
-      if (textNode !== null && $isTextNode(node)) {
+      if (
+        textNode !== null &&
+        textNode.nodeValue !== null &&
+        $isTextNode(node)
+      ) {
         $updateTextNodeFromDOMContent(
           node,
           textNode.nodeValue,
@@ -881,6 +894,10 @@ const activeNestedEditorsMap: Map<string, LexicalEditor> = new Map();
 
 function onDocumentSelectionChange(event: Event): void {
   const selection = getDOMSelection();
+  if (!selection) {
+    return;
+  }
+
   const nextActiveEditor = getNearestEditorFromDOMNode(selection.anchorNode);
 
   if (nextActiveEditor === null) {
@@ -991,7 +1008,7 @@ export function removeRootElementEvents(rootElement: HTMLElement): void {
   // @ts-expect-error: internal field
   const editor: LexicalEditor | null | undefined = rootElement.__lexicalEditor;
 
-  if (editor !== null || editor !== undefined) {
+  if (editor !== null && editor !== undefined) {
     cleanActiveNestedEditorsMap(editor);
     // @ts-expect-error: internal field
     rootElement.__lexicalEditor = null;

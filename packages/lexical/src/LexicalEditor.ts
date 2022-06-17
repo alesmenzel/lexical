@@ -58,6 +58,7 @@ export type EditorSetOptions = {
 };
 
 export type EditorThemeClasses = {
+  characterLimit?: EditorThemeClassName;
   code?: EditorThemeClassName;
   codeHighlight?: Record<string, EditorThemeClassName>;
   hashtag?: EditorThemeClassName;
@@ -100,20 +101,17 @@ export type EditorThemeClasses = {
     base?: EditorThemeClassName;
     focus?: EditorThemeClassName;
   };
-  // Handle other generic values
-  [key: string]:
-    | EditorThemeClassName
-    | TextNodeThemeClasses
-    | {
-        [key: string]:
-          | Array<EditorThemeClassName>
-          | EditorThemeClassName
-          | TextNodeThemeClasses
-          | {
-              [key: string]: EditorThemeClassName;
-            };
-      };
+  [key: string]: string | string[] | InternalThemeClassName;
 };
+
+type InternalThemeClassName =
+  | EditorThemeClassName
+  | TextNodeThemeClasses
+  | string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  | Record<string, any>
+  | string[]
+  | undefined;
 
 export type EditorConfig = {
   disableEvents?: boolean;
@@ -128,7 +126,7 @@ export type RegisteredNode = {
   transforms: Set<Transform<LexicalNode>>;
 };
 
-export type Transform<T> = (node: T) => void;
+export type Transform<T extends LexicalNode> = (node: T) => void;
 
 export type ErrorHandler = (error: Error) => void;
 
@@ -147,9 +145,7 @@ export type UpdateListener = (arg0: {
   tags: Set<string>;
 }) => void;
 
-export type DecoratorListener<T = unknown> = (
-  decorator: Record<NodeKey, T>,
-) => void;
+export type DecoratorListener<T> = (decorator: Record<NodeKey, T>) => void;
 
 export type RootListener = (
   rootElement: null | HTMLElement,
@@ -173,13 +169,13 @@ export const COMMAND_PRIORITY_HIGH = 3;
 export const COMMAND_PRIORITY_CRITICAL = 4;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type LexicalCommand<T> = Readonly<Record<string, unknown>>;
-type Commands = Map<
-  LexicalCommand<unknown>,
-  Array<Set<CommandListener<unknown>>>
+export type LexicalCommand<T = never> = Readonly<Record<string, unknown>>;
+type Commands<TPayload = unknown> = Map<
+  LexicalCommand,
+  Array<Set<CommandListener<TPayload>>>
 >;
 type Listeners = {
-  decorator: Set<DecoratorListener>;
+  decorator: Set<DecoratorListener<any>>;
   mutation: MutationListeners;
   readonly: Set<ReadOnlyListener>;
   root: Set<RootListener>;
@@ -188,7 +184,7 @@ type Listeners = {
 };
 
 export type Listener =
-  | DecoratorListener
+  | DecoratorListener<any>
   | ReadOnlyListener
   | MutationListener
   | RootListener
@@ -349,7 +345,7 @@ export function createEditor(editorConfig?: {
             // eslint-disable-next-line no-prototype-builtins
             if (!proto.hasOwnProperty('decorate')) {
               console.warn(
-                `${this.constructor.name} must implement "decorate" method`,
+                `${proto.constructor.name} must implement "decorate" method`,
               );
             }
           }
@@ -371,7 +367,6 @@ export function createEditor(editorConfig?: {
           }
         }
       }
-      // @ts-expect-error TODO Replace Class utility type with InstanceType
       const type = klass.getType();
       registeredNodes.set(type, {
         klass,
@@ -389,7 +384,7 @@ export function createEditor(editorConfig?: {
       namespace,
       theme,
     },
-    onError,
+    onError ? onError : console.error,
     initializeConversionCache(registeredNodes),
     isReadOnly,
   );
@@ -536,7 +531,7 @@ export class LexicalEditor {
   }
 
   registerCommand<P>(
-    command: LexicalCommand<P>,
+    command: LexicalCommand,
     listener: CommandListener<P>,
     priority: CommandListenerPriority,
   ): () => void {
@@ -567,9 +562,9 @@ export class LexicalEditor {
     }
 
     const listeners = listenersInPriorityOrder[priority];
-    listeners.add(listener);
+    listeners.add(listener as CommandListener<unknown>);
     return () => {
-      listeners.delete(listener);
+      listeners.delete(listener as CommandListener<unknown>);
 
       if (
         listenersInPriorityOrder.every(
@@ -585,7 +580,6 @@ export class LexicalEditor {
     klass: Klass<LexicalNode>,
     listener: MutationListener,
   ): () => void {
-    // @ts-expect-error TODO Replace Class utility type with InstanceType
     const registeredNode = this._nodes.get(klass.getType());
 
     if (registeredNode === undefined) {
@@ -607,7 +601,6 @@ export class LexicalEditor {
     klass: Klass<T>,
     listener: Transform<T>,
   ): () => void {
-    // @ts-expect-error TODO Replace Class utility type with InstanceType
     const type = klass.getType();
 
     const registeredNode = this._nodes.get(type);
@@ -621,17 +614,16 @@ export class LexicalEditor {
     }
 
     const transforms = registeredNode.transforms;
-    transforms.add(listener);
+    transforms.add(listener as Transform<LexicalNode>);
     markAllNodesAsDirty(this, type);
     return () => {
-      transforms.delete(listener);
+      transforms.delete(listener as Transform<LexicalNode>);
     };
   }
 
-  hasNodes<T extends Klass<LexicalNode>>(nodes: Array<T>): boolean {
+  hasNodes(nodes: Array<Klass<LexicalNode>>): boolean {
     for (let i = 0; i < nodes.length; i++) {
       const klass = nodes[i];
-      // @ts-expect-error
       const type = klass.getType();
 
       if (!this._nodes.has(type)) {

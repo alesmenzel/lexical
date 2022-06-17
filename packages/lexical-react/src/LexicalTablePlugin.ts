@@ -37,7 +37,7 @@ export function TablePlugin(): JSX.Element | null {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
-    if (!editor.hasNodes([TableNode, TableCellNode, TableRowNode])) {
+    if (!editor.hasNodes([TableCellNode, TableNode, TableRowNode])) {
       invariant(
         false,
         'TablePlugin: TableNode, TableCellNode or TableRowNode not registered on editor',

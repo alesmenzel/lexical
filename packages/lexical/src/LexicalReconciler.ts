@@ -52,7 +52,7 @@ let activeEditorNodes: RegisteredNodes;
 let treatAllNodesAsDirty = false;
 let activeEditorStateReadOnly = false;
 let activeMutationListeners: MutationListeners;
-let activeTextDirection = null;
+let activeTextDirection: 'ltr' | 'rtl' | null = null;
 let activeDirtyElements: Map<NodeKey, IntentionallyMarkedAsDirtyElement>;
 let activeDirtyLeaves: Set<NodeKey>;
 let activePrevNodeMap: NodeMap;
@@ -343,14 +343,13 @@ function reconcileBlockDirection(element: ElementNode, dom: HTMLElement): void {
       const theme = activeEditorConfig.theme;
       let previousDirectionTheme =
         previousDirection !== null ? theme[previousDirection] : undefined;
-      let nextDirectionTheme =
+      let nextDirectionTheme: string | string[] | undefined =
         direction !== null ? theme[direction] : undefined;
 
       // Remove the old theme classes if they exist
       if (previousDirectionTheme !== undefined) {
         if (typeof previousDirectionTheme === 'string') {
           const classNamesArr = previousDirectionTheme.split(' ');
-          // @ts-expect-error: intentional
           previousDirectionTheme = theme[previousDirection] = classNamesArr;
         }
 
@@ -646,8 +645,8 @@ function reconcileNodeChildren(
 ): void {
   const prevEndIndex = prevChildrenLength - 1;
   const nextEndIndex = nextChildrenLength - 1;
-  let prevChildrenSet: Set<NodeKey>;
-  let nextChildrenSet: Set<NodeKey>;
+  let prevChildrenSet: Set<NodeKey> | undefined;
+  let nextChildrenSet: Set<NodeKey> | undefined;
   let siblingDOM: null | Node = getFirstChild(dom);
   let prevIndex = 0;
   let nextIndex = 0;
@@ -750,14 +749,23 @@ export function reconcileRoot(
   // so instead we make it seem that these values are always set.
   // We also want to make sure we clear them down, otherwise we
   // can leak memory.
+  // @ts-ignore
   activeEditor = undefined;
+  // @ts-ignore
   activeEditorNodes = undefined;
+  // @ts-ignore
   activeDirtyElements = undefined;
+  // @ts-ignore
   activeDirtyLeaves = undefined;
+  // @ts-ignore
   activePrevNodeMap = undefined;
+  // @ts-ignore
   activeNextNodeMap = undefined;
+  // @ts-ignore
   activeEditorConfig = undefined;
+  // @ts-ignore
   activePrevKeyToDOMMap = undefined;
+  // @ts-ignore
   mutatedNodes = undefined;
 
   return currentMutatedNodes;
@@ -769,6 +777,7 @@ export function storeDOMWithKey(
   editor: LexicalEditor,
 ): void {
   const keyToDOMMap = editor._keyToDOMMap;
+  // @ts-ignore We add this to the Node internally, but don't want to create custom type that can be used externally
   dom['__lexicalKey_' + editor._key] = key;
   keyToDOMMap.set(key, dom);
 }

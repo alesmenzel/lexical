@@ -161,7 +161,6 @@ export class LexicalNode {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [x: string]: any;
   __type: string;
-  __key: NodeKey;
   __parent: null | NodeKey;
 
   // Flow doesn't support abstract classes unfortunately, so we can't _force_
@@ -209,12 +208,13 @@ export class LexicalNode {
   }
 
   isAttached(): boolean {
-    let nodeKey = this.__key;
+    let nodeKey: string | null = this.__key;
     while (nodeKey !== null) {
       if (nodeKey === 'root') {
         return true;
       }
-      const node = $getNodeByKey(nodeKey);
+
+      const node: LexicalNode | null = $getNodeByKey(nodeKey);
 
       if (node === null) {
         break;
@@ -280,9 +280,9 @@ export class LexicalNode {
   }
 
   getTopLevelElement(): ElementNode | this | null {
-    let node: ElementNode | this = this;
+    let node: ElementNode | this | null = this;
     while (node !== null) {
-      const parent = node.getParent();
+      const parent: ElementNode | this | null = node.getParent();
       if ($isRootNode(parent) && $isElementNode(node)) {
         return node;
       }
@@ -303,8 +303,8 @@ export class LexicalNode {
     return parent;
   }
 
-  getParents<T extends ElementNode>(): Array<T> {
-    const parents = [];
+  getParents(): Array<ElementNode> {
+    const parents: Array<ElementNode> = [];
     let node = this.getParent();
     while (node !== null) {
       parents.push(node);
@@ -377,10 +377,9 @@ export class LexicalNode {
   getCommonAncestor<T extends ElementNode = ElementNode>(
     node: LexicalNode,
   ): T | null {
-    const a = this.getParents<T>();
+    const a = this.getParents();
     const b = node.getParents();
     if ($isElementNode(this)) {
-      // @ts-expect-error
       a.unshift(this);
     }
     if ($isElementNode(node)) {
@@ -420,7 +419,7 @@ export class LexicalNode {
     let indexB = 0;
     let node: this | ElementNode | LexicalNode = this;
     while (true) {
-      const parent = node.getParentOrThrow();
+      const parent: ElementNode = node.getParentOrThrow();
       if (parent === commonAncestor) {
         indexA = parent.__children.indexOf(node.__key);
         break;
@@ -429,7 +428,7 @@ export class LexicalNode {
     }
     node = targetNode;
     while (true) {
-      const parent = node.getParentOrThrow();
+      const parent: ElementNode = node.getParentOrThrow();
       if (parent === commonAncestor) {
         indexB = parent.__children.indexOf(node.__key);
         break;
@@ -444,7 +443,7 @@ export class LexicalNode {
     if (key === targetNode.__key) {
       return false;
     }
-    let node = targetNode;
+    let node: ElementNode | LexicalNode | null = targetNode;
     while (node !== null) {
       if (node.__key === key) {
         return true;
@@ -492,7 +491,7 @@ export class LexicalNode {
         break;
       }
       let parentSibling = null;
-      let ancestor = parent;
+      let ancestor: ElementNode | null = parent;
       do {
         if (ancestor === null) {
           invariant(false, 'getNodesBetween: ancestor is null');

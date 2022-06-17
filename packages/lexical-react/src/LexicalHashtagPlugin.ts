@@ -277,7 +277,7 @@ export function HashtagPlugin(): JSX.Element | null {
     };
   }, []);
 
-  useLexicalTextEntity<HashtagNode>(
+  useLexicalTextEntity<typeof HashtagNode>(
     getHashtagMatch,
     HashtagNode,
     createHashtagNode,

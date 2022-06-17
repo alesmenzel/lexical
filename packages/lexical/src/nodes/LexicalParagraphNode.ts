@@ -6,11 +6,7 @@
  *
  */
 
-import type {
-  EditorConfig,
-  EditorThemeClasses,
-  LexicalEditor,
-} from '../LexicalEditor';
+import type {EditorConfig, LexicalEditor} from '../LexicalEditor';
 import type {
   DOMConversionMap,
   DOMConversionOutput,
@@ -45,8 +41,8 @@ export class ParagraphNode extends ElementNode {
 
   createDOM(config: EditorConfig): HTMLElement {
     const dom = document.createElement('p');
-    const classNames = getCachedClassNameArray<EditorThemeClasses>(
-      config.theme,
+    const classNames = getCachedClassNameArray(
+      config.theme as Record<string, string | Array<string>>,
       'paragraph',
     );
     if (classNames !== undefined) {
